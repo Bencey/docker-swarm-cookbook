@@ -68,3 +68,5 @@
 | DockUpdater    | 172.16.66.0/24 |
 | Wiki.js        | 172.16.67.0/24 |
 | FreshRSS       | 172.16.68.0/24 |
+| RSS Proxy      | 172.16.69.0/24 |
+| Prontonmail Bridge | 172.16.70.0/24 |
