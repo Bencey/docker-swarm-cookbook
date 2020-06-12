@@ -71,3 +71,4 @@
 | RSS Proxy      | 172.16.69.0/24 |
 | Prontonmail Bridge | 172.16.70.0/24 |
 | YOURLS | 172.16.71.0/24 |
+| Wreeto v2 | 172.16.72.0/24 |
