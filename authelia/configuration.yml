@@ -1,0 +1,74 @@
+###############################################################
+#                   Authelia configuration                    #
+###############################################################
+# Authelia Recipe
+# /share/appdata/config/authelia/configuration.yml
+
+host: 0.0.0.0
+port: 9091
+log_level: debug
+# This secret can also be set using the env variables AUTHELIA_JWT_SECRET
+jwt_secret: AUTHELIA_JWT_SECRET
+#whatever you want the default redirect to be if you login from login.domain.tld
+default_redirection_url: https://home.domain.tld 
+
+#totp:
+#  issuer: authelia.com
+
+#duo_api:
+#  hostname: api-123456789.example.com
+#  integration_key: ABCDEF
+#  # This secret can also be set using the env variables AUTHELIA_DUO_API_SECRET_KEY
+#  secret_key: 1234567890abcdefghifjkl
+
+authentication_backend:
+  file:
+    path: /etc/authelia/users_database.yml
+
+access_control:
+  default_policy: deny
+  rules:
+    - domain: "*.domain.tld"
+      subject:
+        - "group:admins"
+      policy: one_factor
+
+session:
+  name: authelia_session
+  # This secret can also be set using the env variables AUTHELIA_SESSION_SECRET
+  secret: AUTHELIA_SESSION_SECRET
+  expiration: 7200 # 2 hours
+  inactivity: 1800 # 30 minutes
+  domain: domain.tld # Should match whatever your root protected domain is
+
+#  redis:
+#    host: redis
+#    port: 6379
+    # This secret can also be set using the env variables AUTHELIA_SESSION_REDIS_PASSWORD
+#    password: AUTHELIA_SESSION_REDIS_PASSWORD_FILE
+
+regulation:
+  max_retries: 3
+  find_time: 120
+  ban_time: 300
+
+storage:
+  local:
+    path: /var/lib/authelia/db.sqlite3
+
+#see https://www.authelia.com/docs/configuration/notifier/smtp.html
+notifier:
+  disable_startup_check: true
+  smtp:
+    username: youremail@email.com
+    # This secret can also be set using the env variables AUTHELIA_NOTIFIER_SMTP_PASSWORD
+    password: AUTHELIA_NOTIFIER_SMTP_PASSWORD
+    host: host
+    port: port
+    sender: admin@domain.tld
+    # Subject configuration of the emails sent.
+    # {title} is replaced by the text from the notifier
+    subject: "[Authelia] {title}"
+    ## disable_require_tls: false
+    ## disable_verify_cert: false
+    ## trusted_cert: ""

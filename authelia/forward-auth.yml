@@ -1,0 +1,23 @@
+##Replace your Dynamic Traefik Forward-Auth file with the following:
+
+# To secure your services, either of the following labels to your service:
+
+# - "traefik.http.routers.SERVICE.middlewares=authelia@docker" 
+#OR
+# - "traefik.http.routers.SERVICE.middlewares=forward-auth@file"
+
+# Traefik Dynamic Configuration
+# Middleware: Forward Auth
+# Host Path: /share/appdata/config/traefik/dynamic/forward-auth.yaml
+# Internal Path: /etc/traefik/dynamic/forward-auth.yaml
+
+http:
+  middlewares:
+    forward-auth:
+      forwardAuth:
+        address: "http://authelia:9091/api/verify?rd=https://login.domain.tld/"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "Remote-User"
+          - "Remote-Groups"
+          
