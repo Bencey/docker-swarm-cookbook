@@ -16,9 +16,7 @@ services:
     deploy:
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.ddclient.entrypoints=https"
         - "traefik.http.routers.ddclient.rule=Host(`ddclient.gkoerk.com`)"
-        - "traefik.http.routers.ddclient.tls.certresolver=namecheap"
         - "traefik.http.routers.ddclient.middlewares=forward-auth@file"
         - "traefik.http.services.ddclient.loadbalancer.server.port=3000" 
 
