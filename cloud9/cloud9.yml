@@ -1,0 +1,24 @@
+version: "3.4"
+services:
+  cloud9:
+    image: linuxserver/cloud9:latest
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=America/Chicago
+      # - GITURL=https://github.com/linuxserver/docker-cloud9.git #optional
+    networks:
+      - traefik_public
+    volumes:
+      - /share/appdata/config:/code #optional
+      - /var/run/docker.sock:/var/run/docker.sock #optional
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.cloud9.rule=Host(`cloud9.gkoerk.com`)"
+        - "traefik.http.routers.cloud9.middlewares=forward-auth@file"        
+        - "traefik.http.services.cloud9.loadbalancer.server.port=8000"
+
+networks:
+  traefik_public:
+    external: true
