@@ -6,22 +6,44 @@ services:
   app:
     image: solidnerd/bookstack:latest
     environment:
+      - SESSION_SECURE_COOKIE=true
+      # Database Configuration
       - DB_HOST=db:3306
       - DB_DATABASE=bookstackdb
       - DB_USERNAME=bookstack
       - DB_PASSWORD=<dbpassword>
+      # App configuration  #
+      - APP_URL=https://bookstack.gkoerk.com
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_KEY=base64:<hash>
+      - APP_AUTO_LANG_PUBLIC=true
+      - APP_TIMEZONE=America/Chicago
+      # Mail Configuration
+      - MAIL_DRIVER=smtp
+      - MAIL_HOST=<mailhost>
+      - MAIL_PORT=<port>
+      - MAIL_ENCRYPTION=tls
+      - MAIL_USERNAME=<username>
+      - MAIL_PASSWORD=<mailpassword>
+      # The "from" email address for outgoing email
+      - MAIL_FROM=<emailaddress>
+      - MAIL_FROM_NAME=<emailalias>
+      # Redis configuration
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - REDIS_SERVERS=redis:6379:0
     volumes:
-      - /etc/localtime:/etc/localtime:ro
+      - /share/appdata/bookstack/uploads:/var/www/bookstack/public/uploads
+      - /share/appdata/bookstack/storage:/var/www/bookstack/storage/uploads
     networks:
       - internal
       - traefik_public
     deploy:
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.bookstack.entrypoints=https"
         - "traefik.http.routers.bookstack.rule=Host(`bookstack.gkoerk.com`)"
-        - "traefik.http.routers.bookstack.tls.certresolver=namecheap"
-        - "traefik.http.services.bookstack.loadbalancer.server.port=80"
+        - "traefik.http.services.bookstack.loadbalancer.server.port=8080"
 
   db:
     image: mariadb:10
@@ -59,6 +81,13 @@ services:
       EOF'
     networks:
       - internal
+
+    redis:
+      image: redis:alpine
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+      networks:
+        - internal
 
 networks:
   traefik_public:
