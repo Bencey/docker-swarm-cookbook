@@ -1,0 +1,56 @@
+# Authelia Recipe
+# /share/appdata/config/authelia/authelia.yml
+
+#This example comments out the REDIS and all 2FA.  Docs can be found here: https://www.authelia.com/docs/
+
+
+version: "3.4"
+
+
+#all secrets kept in secrets folder by design.
+secrets:
+  AUTHELIA_JWT_SECRET:
+    file: "/share/appdata/config/secrets/AUTHELIA_JWT_SECRET.secret"
+  AUTHELIA_SESSION_SECRET:
+    file: "/share/appdata/config/secrets/AUTHELIA_SESSION_SECRET.secret"
+#  AUTHELIA_SESSION_REDIS_PASSWORD:
+#    file: "/share/appdata/config/secrets/AUTHELIA_SESSION_REDIS_PASSWORD.secret"
+  AUTHELIA_NOTIFIER_SMTP_PASSWORD:
+    file: "/share/appdata/config/secrets/AUTHELIA_NOTIFIER_SMTP_PASSWORD.secret"
+
+services:
+  authelia:
+    image: authelia/authelia
+    secrets:
+      - AUTHELIA_JWT_SECRET
+      - AUTHELIA_SESSION_SECRET
+#      - AUTHELIA_SESSION_REDIS_PASSWORD
+      - AUTHELIA_NOTIFIER_SMTP_PASSWORD
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - /share/appdata/config/authelia:/var/lib/authelia
+      - /share/appdata/config/authelia/users_database.yml:/etc/authelia/users_database.yml
+      - /share/appdata/config/authelia/configuration.yml:/etc/authelia/configuration.yml:ro
+    networks:
+      - traefik_public
+      - internal
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.authelia.entrypoints=https"
+        - "traefik.http.routers.authelia.rule=Host(`login.domain.tld`)"
+        - "traefik.http.routers.authelia.tls.certresolver=cloudflare"
+        - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://login.domain.tld"
+        - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
+        - "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User, Remote-Groups"
+        - "traefik.http.services.authelia.loadbalancer.server.port=9091"
+        
+networks:
+  traefik_public:
+    external: true
+  internal:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 172.16.49.0/24   
