@@ -61,25 +61,7 @@ default:
 # For example if you have an application in called www.example.test the first application in the list
 # below and all the values set for it in the list will be used to authenticate the user.
 # apps:
-# - name: auth.gkoerk.com
-#   required-permissions:
-#     - read:public
 # - name: plex.gkoerk.com
-#   required-permissions:
-#     - read:public
-# - name: ombi.gkoerk.com
-#   required-permissions:
-#     - read:public
-# - name: emby.gkoerk.com
-#   required-permissions:
-#     - read:public
-# - name: library.gkoerk.com
-#   required-permissions:
-#     - read:public
-# - name: paste.gkoerk.com
-#   required-permissions:
-#     - read:public
-# - name: wiki.gkoerk.com
 #   required-permissions:
 #     - read:public
 
