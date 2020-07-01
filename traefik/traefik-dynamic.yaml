@@ -1,0 +1,179 @@
+# Traefik Dynamic Configuration
+# Global Dynamic File
+# Host Path: /share/appdata/config/traefik/traefik-dynamic.yaml
+# Internal Path: /etc/traefik/traefik-dynamic.yaml
+
+http:
+
+# Traefik Dynamic Routers Configuration
+
+  routers:
+
+    gknas:
+      middlewares:
+        - forward-auth
+      service: gknas
+      rule: "Host(`gknas.gkoerk.com`)"
+      tls:
+        options: default
+        certResolver: namecheap
+        domains:
+          - main: "*.gkoerk.com"
+            sans:
+              - gkoerk.com
+
+    adguard:
+      middlewares:
+        - forward-auth
+      service: adguard
+      rule: "Host(`adguard.gkoerk.com`)"
+      tls:
+        options: default
+        certResolver: namecheap
+        domains:
+          - main: "*.gkoerk.com"
+            sans:
+              - gkoerk.com
+
+    unifi:
+      service: unifi
+      rule: "Host(`unifi.gkoerk.com`)"
+      tls:
+        options: default
+        certResolver: namecheap
+        domains:
+          - main: "*.gkoerk.com"
+            sans:
+              - gkoerk.com
+
+# Traefik Dynamic Middlewares Configuration
+
+  middlewares:
+
+    forward-auth:
+      forwardAuth:
+        address: "http://192.168.1.100:8080/authorize"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - authorization
+          - x-forwardauth-nickname
+          - x-forwardauth-family-name
+          - x-forwardauth-given-name
+          - x-forwardauth-name
+          - x-forwardauth-sub
+          - x-forwardauth-email
+
+    basic-user:
+      basicAuth:
+        users:
+          - "admin:$2y$14$WN65z7jVNksY0bLlh0378.RELt/cXgKhqLXLiGOXTrHAhMWFj8UX6"
+
+    add-admin:
+      addPrefix:
+        prefix: "/admin"
+
+    compress:
+      compress: {}
+
+    nextcloud-dav-redirect:
+      redirectRegex:
+        permanent: true
+        regex: 'https://(.*)/.well-known/(card|cal)dav'
+        replacement: 'https://${1}/remote.php/dav/'
+
+    nextcloud-headers:
+      headers:
+        contentSecurityPolicy: "upgrade-insecure-requests"
+        customResponseHeaders:
+          X-Robots-Tag: "none"
+        hostsProxyHeaders:
+          - X-Forwarded-Host
+        frameDeny: true
+        sslRedirect: true
+        stsSeconds: 120
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        customFrameOptionsValue: "SAMEORIGIN"
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: strict-origin-when-cross-origin
+        featurePolicy: >-
+          camera 'none'; geolocation 'none'; microphone 'none'; payment 'none';
+          usb 'none'; vr 'none';
+
+    secure-headers:
+      headers:
+        hostsProxyHeaders:
+          - X-Forwarded-Host
+        sslRedirect: true
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        customFrameOptionsValue: 'SAMEORIGIN'
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: strict-origin-when-cross-origin
+        featurePolicy: >-
+          camera 'none'; geolocation 'none'; microphone 'none'; payment 'none';
+          usb 'none'; vr 'none';
+        customResponseHeaders:
+          X-Robots-Tag: 'none,noarchive,nosnippet,notranslate,noimageindex,'
+          server: ''
+        contentSecurityPolicy: "upgrade-insecure-requests"
+        frameDeny: true
+
+    secure:
+      chain:
+        middlewares:
+        - secure-headers
+        - forward-auth
+
+    nextcloud-chain:
+      chain:
+        middlewares:
+        - nextcloud-headers
+        - nextcloud-dav-redirect
+
+# Traefik Dynamic Services
+
+  services:
+
+    gknas:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "https://192.168.1.100:8443"
+
+    adguard:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://192.168.1.2"
+
+    unifi:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "https://192.168.1.1:443"
+
+# Traefik Dynamic TLS Options
+
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      cipherSuites:
+      - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+      - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+      - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+      - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+      - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+      - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+      curvePreferences:
+      - X25519
+      - CurveP256
+      - CurveP384
+      sniStrict: true
+      preferServerCipherSuites: true
