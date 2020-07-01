@@ -1,0 +1,47 @@
+version: "3.4"
+
+services:
+  app:
+    image: kanboard/kanboard
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /share/appdata/kanboard/data:/var/www/app/data
+      - /share/appdata/kanboard/plugins:/var/www/app/plugins
+    networks:
+      - internal
+      - traefik_public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.kanboard.rule=Host(`kanboard.gkoerk.com`)"
+        - "traefik.http.routers.kanboard.middlewares=forward-auth@file"
+        - "traefik.http.services.kanboard.loadbalancer.server.port=80"
+
+  cron:
+    image: kanboard/kanboard
+    volumes:
+     - /share/appdata/kanboard/data:/var/www/app/data
+    user: nginx
+    networks:
+      - internal
+    entrypoint: |
+      bash -c 'bash -s <<EOF
+        trap "break;exit" SIGHUP SIGINT SIGTERM
+        while [ ! -f /var/www/app/config.php ]; do
+          sleep 1
+        done
+        while true; do
+          cd /var/www/app
+          ./cli cron
+          sleep 8h
+        done
+      EOF'
+
+networks:
+  traefik_public:
+    external: true
+  internal:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 172.16.8.0/24
