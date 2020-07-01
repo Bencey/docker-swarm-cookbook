@@ -1,0 +1,22 @@
+version: "3.4"
+
+services:
+  tiddlywiki:
+    image: nicolaw/tiddlywiki
+    environment:
+      - USERNAME=<username>
+      - PASSWORD=<password>
+    volumes:
+      - /share/appdata/tiddlywiki:/var/lib/tiddlywiki
+    networks:
+      - traefik_public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.tiddlywiki.rule=Host(`tiddlywiki.gkoerk.com`)"
+        - "traefik.http.routers.tiddlywiki.middlewares=forward-auth@file"
+        - "traefik.http.services.tiddlywiki.loadbalancer.server.port=8080"
+
+networks:
+  traefik_public:
+    external: true
