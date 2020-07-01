@@ -1,0 +1,24 @@
+version: "3.4"
+services:
+
+  librespeed:
+    image: linuxserver/librespeed:latest
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=America/Chicago
+      - PASSWORD=<password>
+    volumes:
+      - /share/appdata/librespeed:/config
+    networks:
+      - traefik_public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.librespeed.rule=Host(`librespeed.gkoerk.com`)"
+         - "traefik.http.routers.codimd.middlewares=forward-auth@file"
+        - "traefik.http.services.librespeed.loadbalancer.server.port=80"
+
+networks:
+  traefik_public:
+    external: true
