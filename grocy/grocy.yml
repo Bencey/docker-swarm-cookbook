@@ -1,0 +1,23 @@
+version: "3.4"
+
+services:
+  grocy:
+    image: linuxserver/grocy:latest
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=America/Chicago
+    volumes:
+      - /share/appdata/grocy:/config
+    networks:
+      - traefik_public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.grocy.rule=Host(`grocy.gkoerk.com`)"
+        - "traefik.http.routers.grocy.middlewares=forward-auth@file"
+        - "traefik.http.services.grocy.loadbalancer.server.port=80"
+
+networks:
+  traefik_public:
+    external: true
