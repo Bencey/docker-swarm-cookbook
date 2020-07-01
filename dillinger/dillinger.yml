@@ -1,0 +1,25 @@
+# Dillinger Recipe
+# /share/appdata/config/dillinger/dillinger.yml
+version: "3.4"
+
+services:
+  dillinger:
+    image: linuxserver/dillinger:latest
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=America/Chicago
+    networks:
+      - traefik_public
+    volumes:
+      - /share/appdata/config/dillinger:/config
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dillinger.rule=Host(`dillinger.gkoerk.com`)"
+        - "traefik.http.routers.dillinger.middlewares=forward-auth@file"
+        - "traefik.http.services.dillinger.loadbalancer.server.port=8080"
+
+networks:
+  traefik_public:
+    external: true
