@@ -1,0 +1,23 @@
+version: "3.4"
+
+services:
+  monitorr:
+    image: monitorr/monitorr:latest
+    environment:
+      - TZ=America/Chicago
+      - PGID=1000
+      - PUID=100
+    volumes:
+      - /share/appdata/monitorr:/app
+    networks:
+      - traefik_public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.monitorr.rule=Host(`monitorr.gkoerk.com`)"
+        - "traefik.http.routers.monitorr.middlewares=forward-auth@file"
+        - "traefik.http.services.monitorr.loadbalancer.server.port=80"
+
+networks:
+  traefik_public:
+    external: true
