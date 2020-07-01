@@ -1,0 +1,23 @@
+version: "3.4"
+
+services:
+  remmina:
+    image: linuxserver/remmina:latest
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=America/Chicago
+    networks:
+      - traefik_public
+    volumes:
+      - /share/appdata/remmina:/config
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.remmina.rule=Host(`remmina.gkoerk.com`)"
+        - "traefik.http.routers.remmina.middlewares=forward-auth@file"
+        - "traefik.http.services.remmina.loadbalancer.server.port=3000"
+
+networks:
+  traefik_public:
+    external: true
