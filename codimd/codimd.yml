@@ -1,0 +1,82 @@
+version: "3.4"
+services:
+  codimd:
+    image: nabo.codimd.dev/hackmdio/hackmd:2.1.0
+    volumes:
+      - /share/appdata/codimd/config:/config
+      - /share/appdata/codimd/uploads:/home/hackmd/app/public/uploads
+    environment:
+      # CMD_DB_URL is formatted like: <databasetype>://<username>:<password>@<hostname>/<database>
+      # Other examples are:
+      # - mysql://hackmd:hackmdpass@database:3306/hackmd
+      # - sqlite:///data/sqlite.db (NOT RECOMMENDED)
+      - 'CMD_DB_URL=postgres://<dbusername>:<dbpassword>@db:5432/<dbname>'
+      - 'CMD_USECDN=false'
+      - 'CMD_ALLOW_PDF_EXPORT=true'
+      - 'CMD_LOGLEVEL=info'
+      - 'CMD_IMAGE_UPLOAD_TYPE=filesystem'
+      # - 'CMD_DOMAIN=codimd.gkoerk.com'
+      # - 'CMD_URL_PATH=codimd'
+      - 'CMD_AUTO_VERSION_CHECK=true'
+      - 'CMD_ALLOW_GRAVATAR=true'
+      - 'CMD_ALLOW_ANONYMOUS=false'
+      - 'CMD_ALLOW_ANONYMOUS_EDITS=false'
+      - 'CMD_ALLOW_ANONYMOUS_VIEWS=false'
+      # -  CMD_PROTOCOL_USESSL=true
+      - 'CMD_DEFAULT_PERMISSION=protected'
+      - 'CMD_ALLOW_FREEURL=true'
+      - 'CMD_SESSION_LIFE=1209600000'
+      - 'CMD_EMAIL=true'
+      - 'CMD_ALLOW_EMAIL_REGISTER=true'
+    networks:
+      - traefik_public
+      - internal
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.codimd.rule=Host(`codimd.gkoerk.com`)"
+        - "traefik.http.routers.codimd.middlewares=secure@file"
+        - "traefik.http.services.codimd.loadbalancer.server.port=3000"
+
+  db:
+    image: postgres:11.6-alpine
+    environment:
+      - POSTGRES_DB=<dbname>
+      - POSTGRES_PASSWORD=<dbpassword>
+      - POSTGRES_USER=<dbusername>
+    volumes:
+      - /share/runtime/codimd:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  db-backup:
+    image: postgres:11.6-alpine
+    environment:
+      - PGUSER=<dbusername>
+      - PGPASSWORD=<dbpassword>
+      - PGHOST=db
+      - BACKUP_NUM_KEEP=7
+      - BACKUP_FREQUENCY=1d
+    volumes:
+      - /share/appdata/codimd/database-dump:/dump
+    entrypoint: |
+      bash -c 'bash -s <<EOF
+      trap "break;exit" SIGHUP SIGINT SIGTERM
+      sleep 2m
+      while /bin/true; do
+        pg_dump -Fc > /dump/dump_\`date +%d-%m-%Y"_"%H_%M_%S\`.psql
+        (ls -t /dump/dump*.psql|head -n $$BACKUP_NUM_KEEP;ls /dump/dump*.psql)|sort|uniq -u|xargs rm -- {}
+        sleep $$BACKUP_FREQUENCY
+      done
+      EOF'
+    networks:
+      - internal
+
+networks:
+  traefik_public:
+    external: true
+  internal:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 172.16.43.0/24
