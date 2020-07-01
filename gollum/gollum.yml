@@ -16,9 +16,7 @@ services:
     deploy:
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.gollum.entrypoints=https"
         - "traefik.http.routers.gollum.rule=Host(`gollum.gkoerk.com`)"
-        - "traefik.http.routers.gollum.tls.certresolver=namecheap"
         - "traefik.http.routers.gollum.middlewares=forward-auth@file"
         - "traefik.http.services.gollum.loadbalancer.server.port=4567" 
       
