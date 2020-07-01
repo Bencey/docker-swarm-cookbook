@@ -1,0 +1,15 @@
+version: "3.4"
+services:
+  reactiveresume:
+    image: amruthpillai/reactive-resume:latest
+    networks:
+      - traefik_public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.reactiveresume.rule=Host(`resume.gkoerk.com`)"
+        - "traefik.http.services.reactiveresume.loadbalancer.server.port=80"
+
+networks:
+  traefik_public:
+    external: true
