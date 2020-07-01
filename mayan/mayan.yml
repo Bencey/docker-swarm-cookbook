@@ -1,0 +1,84 @@
+version: "3.4"
+
+services:
+  broker:
+    image: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=mayan
+      - RABBITMQ_DEFAULT_PASS=<rabbitpass>
+      - RABBITMQ_DEFAULT_VHOST=mayan
+    volumes:
+      - /share/runtime/mayan/rabbitmq:/var/lib/rabbitmq
+    networks:
+      - internal
+
+  results:
+    image: redis:latest
+    volumes:
+      - /share/runtime/mayan/results:/data
+    networks:
+      - internal
+
+  db:
+    image: postgres:10.5
+    environment:
+      - POSTGRES_DB=<dbname>
+      - POSTGRES_PASSWORD=<dbpass>
+      - POSTGRES_USER=<dbuser>
+    volumes:
+      - /share/runtime/mayan/db:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  db-backup:
+    image: postgres:10.5
+    environment:
+      - 
+    volumes:
+      - /share/appdata/mayan/database-dump:/dump
+    entrypoint: |
+      bash -c 'bash -s <<EOF
+      trap "break;exit" SIGHUP SIGINT SIGTERM
+      sleep 2m
+      while /bin/true; do
+        pg_dump -Fc > /dump/dump_\`date +%d-%m-%Y"_"%H_%M_%S\`.psql
+        (ls -t /dump/dump*.psql|head -n $$BACKUP_NUM_KEEP;ls /dump/dump*.psql)|sort|uniq -u|xargs rm -- {}
+        sleep $$BACKUP_FREQUENCY
+      done
+      EOF'
+    networks:
+      - internal
+
+  app:
+    image: mayanedms/mayanedms:latest
+    environment:
+      - MAYAN_BROKER_URL=amqp://mayan:<rabbitpass>@broker:5672/mayan
+      - MAYAN_CELERY_RESULT_BACKEND=redis://results:6379/0
+      - MAYAN_DATABASE_ENGINE=django.db.backends.postgresql
+      - MAYAN_DATABASE_HOST=db
+      - MAYAN_DATABASE_NAME=<dbname>
+      - MAYAN_DATABASE_PASSWORD=<dbpass>
+      - MAYAN_DATABASE_USER=<dbuser>
+      - MAYAN_GUNICORN_WORKERS=4
+    volumes:
+      - /share/appdata/mayan/app:/var/lib/mayan
+      - /share/appdata/mayan/watch_folder:/watch_folder
+      - /share/appdata/mayan/stage_folder:/stage_folder
+    networks:
+      - internal
+      - traefik_public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.mayan.rule=Host(`mayan.gkoerk.com`)"
+        - "traefik.http.routers.mayan.middlewares=forward-auth@file"
+        - "traefik.http.services.mayan.loadbalancer.server.port=8000"
+
+networks:
+  traefik_public:
+    external: true
+  internal:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 172.16.37.0/24
