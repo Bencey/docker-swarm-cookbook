@@ -1,0 +1,58 @@
+# Wekan Recipe
+# /share/appdata/config/wekan/wekan.yml
+version: "3.4"
+
+services:
+  db:
+    image: mongo:latest
+    command: mongod --oplogSize 128
+    networks:
+      - internal
+    volumes:
+      - /share/runtime/wekan/database:/data/db
+
+  db-backup:
+    image: mongo:latest
+    environment:
+      - BACKUP_NUM_KEEP=7
+      - BACKUP_FREQUENCY=1d
+    volumes:
+      - /share/appdata/wekan/database-dump:/dump
+    entrypoint: |
+      bash -c 'bash -s <<EOF
+      trap "break;exit" SIGHUP SIGINT SIGTERM
+      sleep 2m
+      while /bin/true; do
+        mongodump -h db --gzip --archive=/dump/dump_\`date +%d-%m-%Y"_"%H_%M_%S\`.mongo.gz
+        (ls -t /dump/dump*.mongo.gz|head -n $$BACKUP_NUM_KEEP;ls /dump/dump*.mongo.gz)|sort|uniq -u|xargs rm -- {}
+        sleep $$BACKUP_FREQUENCY
+      done
+      EOF'
+    networks:
+      - internal
+
+  wekan:
+    image: wekanteam/wekan:latest
+    networks:
+      - traefik_public
+      - internal
+    environment:
+      - MONGO_URL=mongodb://db:27017/wekan
+      - ROOT_URL=https://wekan.gkoerk.com
+      - MAIL_URL=smtp://<mailuser>:<mailpassword>@<mailhost>:<mailport>
+      - MAIL_FROM=wekan@wekan.gkoerk.com
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.wekan.rule=Host(`wekan.gkoerk.com`)"
+        - "traefik.http.routers.wekan.middlewares=forward-auth@file"
+        - "traefik.http.services.wekan.loadbalancer.server.port=8080"
+
+networks:
+  traefik_public:
+    external: true
+  internal:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 172.16.3.0/24
